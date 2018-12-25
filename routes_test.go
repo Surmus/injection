@@ -126,7 +126,7 @@ func (r *ginRoutesMock) StaticFS(relativePath string, fs http.FileSystem) gin.IR
 	return r
 }
 
-func setupRouterWithProviders() IRoutes {
+func setupRouterWithProviders() Routes {
 	valueRequiringContextProvider := func(ctx *gin.Context) *TestDependencyStruct {
 		return &TestDependencyStruct{Ctx: ctx}
 	}

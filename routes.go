@@ -6,27 +6,27 @@ import (
 	"reflect"
 )
 
-type IRoutes interface {
-	Use(...Handler) (IRoutes, error)
+type Routes interface {
+	Use(...Handler) (Routes, error)
 
-	Handle(string, string, ...Handler) (IRoutes, error)
-	Any(string, ...Handler) (IRoutes, error)
-	GET(string, ...Handler) (IRoutes, error)
-	POST(string, ...Handler) (IRoutes, error)
-	DELETE(string, ...Handler) (IRoutes, error)
-	PATCH(string, ...Handler) (IRoutes, error)
-	PUT(string, ...Handler) (IRoutes, error)
-	OPTIONS(string, ...Handler) (IRoutes, error)
-	HEAD(string, ...Handler) (IRoutes, error)
+	Handle(string, string, ...Handler) (Routes, error)
+	Any(string, ...Handler) (Routes, error)
+	GET(string, ...Handler) (Routes, error)
+	POST(string, ...Handler) (Routes, error)
+	DELETE(string, ...Handler) (Routes, error)
+	PATCH(string, ...Handler) (Routes, error)
+	PUT(string, ...Handler) (Routes, error)
+	OPTIONS(string, ...Handler) (Routes, error)
+	HEAD(string, ...Handler) (Routes, error)
 
-	StaticFile(string, string) IRoutes
-	Static(string, string) IRoutes
-	StaticFS(string, http.FileSystem) IRoutes
+	StaticFile(string, string) Routes
+	Static(string, string) Routes
+	StaticFS(string, http.FileSystem) Routes
 
 	RegisterProvider(Provider) bool
 	RegisterProviders(...Provider) error
 
-	RegisterController(Controller) (IRoutes, error)
+	RegisterController(Controller) (Routes, error)
 }
 
 type RouterGroup struct {
@@ -52,7 +52,7 @@ func (r *RouterGroup) registerContextProvider() {
 	r.providers[contextType] = nil
 }
 
-func (r *RouterGroup) Use(handlers ...Handler) (IRoutes, error) {
+func (r *RouterGroup) Use(handlers ...Handler) (Routes, error) {
 	ginHandlers, err := r.registerGinHandlerFunctions(handlers)
 
 	if err == nil {
@@ -62,7 +62,7 @@ func (r *RouterGroup) Use(handlers ...Handler) (IRoutes, error) {
 	return r, err
 }
 
-func (r *RouterGroup) Handle(requestType string, endPoint string, handlers ...Handler) (IRoutes, error) {
+func (r *RouterGroup) Handle(requestType string, endPoint string, handlers ...Handler) (Routes, error) {
 	ginHandlers, err := r.registerGinHandlerFunctions(handlers)
 
 	if err == nil {
@@ -72,7 +72,7 @@ func (r *RouterGroup) Handle(requestType string, endPoint string, handlers ...Ha
 	return r, err
 }
 
-func (r *RouterGroup) Any(endPoint string, handlers ...Handler) (IRoutes, error) {
+func (r *RouterGroup) Any(endPoint string, handlers ...Handler) (Routes, error) {
 	ginHandlers, err := r.registerGinHandlerFunctions(handlers)
 
 	if err == nil {
@@ -82,7 +82,7 @@ func (r *RouterGroup) Any(endPoint string, handlers ...Handler) (IRoutes, error)
 	return r, err
 }
 
-func (r *RouterGroup) GET(endPoint string, handlers ...Handler) (IRoutes, error) {
+func (r *RouterGroup) GET(endPoint string, handlers ...Handler) (Routes, error) {
 	ginHandlers, err := r.registerGinHandlerFunctions(handlers)
 
 	if err == nil {
@@ -92,7 +92,7 @@ func (r *RouterGroup) GET(endPoint string, handlers ...Handler) (IRoutes, error)
 	return r, err
 }
 
-func (r *RouterGroup) POST(endPoint string, handlers ...Handler) (IRoutes, error) {
+func (r *RouterGroup) POST(endPoint string, handlers ...Handler) (Routes, error) {
 	ginHandlers, err := r.registerGinHandlerFunctions(handlers)
 
 	if err == nil {
@@ -102,7 +102,7 @@ func (r *RouterGroup) POST(endPoint string, handlers ...Handler) (IRoutes, error
 	return r, err
 }
 
-func (r *RouterGroup) DELETE(endPoint string, handlers ...Handler) (IRoutes, error) {
+func (r *RouterGroup) DELETE(endPoint string, handlers ...Handler) (Routes, error) {
 	ginHandlers, err := r.registerGinHandlerFunctions(handlers)
 
 	if err == nil {
@@ -112,7 +112,7 @@ func (r *RouterGroup) DELETE(endPoint string, handlers ...Handler) (IRoutes, err
 	return r, err
 }
 
-func (r *RouterGroup) PATCH(endPoint string, handlers ...Handler) (IRoutes, error) {
+func (r *RouterGroup) PATCH(endPoint string, handlers ...Handler) (Routes, error) {
 	ginHandlers, err := r.registerGinHandlerFunctions(handlers)
 
 	if err == nil {
@@ -122,7 +122,7 @@ func (r *RouterGroup) PATCH(endPoint string, handlers ...Handler) (IRoutes, erro
 	return r, err
 }
 
-func (r *RouterGroup) PUT(endPoint string, handlers ...Handler) (IRoutes, error) {
+func (r *RouterGroup) PUT(endPoint string, handlers ...Handler) (Routes, error) {
 	ginHandlers, err := r.registerGinHandlerFunctions(handlers)
 
 	if err == nil {
@@ -132,7 +132,7 @@ func (r *RouterGroup) PUT(endPoint string, handlers ...Handler) (IRoutes, error)
 	return r, err
 }
 
-func (r *RouterGroup) OPTIONS(endPoint string, handlers ...Handler) (IRoutes, error) {
+func (r *RouterGroup) OPTIONS(endPoint string, handlers ...Handler) (Routes, error) {
 	ginHandlers, err := r.registerGinHandlerFunctions(handlers)
 
 	if err == nil {
@@ -142,7 +142,7 @@ func (r *RouterGroup) OPTIONS(endPoint string, handlers ...Handler) (IRoutes, er
 	return r, err
 }
 
-func (r *RouterGroup) HEAD(endPoint string, handlers ...Handler) (IRoutes, error) {
+func (r *RouterGroup) HEAD(endPoint string, handlers ...Handler) (Routes, error) {
 	ginHandlers, err := r.registerGinHandlerFunctions(handlers)
 
 	if err == nil {
@@ -152,25 +152,25 @@ func (r *RouterGroup) HEAD(endPoint string, handlers ...Handler) (IRoutes, error
 	return r, err
 }
 
-func (r *RouterGroup) StaticFile(relativePath, filepath string) IRoutes {
+func (r *RouterGroup) StaticFile(relativePath, filepath string) Routes {
 	r.ginRoutes = r.ginRoutes.StaticFile(relativePath, filepath)
 
 	return r
 }
 
-func (r *RouterGroup) Static(relativePath, root string) IRoutes {
+func (r *RouterGroup) Static(relativePath, root string) Routes {
 	r.ginRoutes = r.ginRoutes.Static(relativePath, root)
 
 	return r
 }
 
-func (r *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) IRoutes {
+func (r *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) Routes {
 	r.ginRoutes = r.ginRoutes.StaticFS(relativePath, fs)
 
 	return r
 }
 
-func (r *RouterGroup) RegisterController(controller Controller) (routes IRoutes, err error) {
+func (r *RouterGroup) RegisterController(controller Controller) (routes Routes, err error) {
 	defer func() {
 		e := recover()
 
