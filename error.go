@@ -43,6 +43,32 @@ func newCannotRegisterProvidersError(providers []Provider) Error {
 	)}
 }
 
-func newInvalidHandlerError(handler interface{}) error {
-	return Error{fmt.Sprintf("Value passed as handler is not function: %T", handler)}
+func newInvalidHandlerError(handler interface{}) Error {
+	return Error{fmt.Sprintf("value passed as handler is not function: %T", handler)}
+}
+
+func newInvalidHandlerFnParamCountError() Error {
+	return Error{"function passed as routes request handler should have one context parameter"}
+}
+
+func newInvalidContextTypeError(contextType reflect.Type) Error {
+	return Error{fmt.Sprintf(
+		"routes request handler context parameter(%s) does not implement context.Context interface",
+		contextType,
+	)}
+}
+
+func newMethodParamCountError(methodName string) Error {
+	return Error{fmt.Sprintf(
+		"controller method %s signature should contain one parameter with context",
+		methodName,
+	)}
+}
+
+func newInvalidControllerMethod(methodName string, routesCtxType reflect.Type) Error {
+	return Error{fmt.Sprintf(
+		"controller method %s context parameter should be same type as routes request handler context type %s",
+		methodName,
+		routesCtxType,
+	)}
 }

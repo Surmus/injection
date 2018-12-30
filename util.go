@@ -1,6 +1,7 @@
 package injection
 
 import (
+	"context"
 	"fmt"
 	"github.com/fatih/camelcase"
 	"net/http"
@@ -106,4 +107,50 @@ func isNilValue(value reflect.Value) bool {
 	}
 
 	return false
+}
+
+func isFnType(valType reflect.Type) bool {
+	return valType.Kind() == reflect.Func
+}
+
+func validateRoutes(routes Routes) error {
+
+	handlerFnType := routes.HandlerFnType()
+	contextType := reflect.TypeOf(new(context.Context)).Elem()
+
+	if !isFnType(routes.HandlerFnType()) {
+		return newInvalidHandlerError(routes.HandlerFnType().Kind())
+	}
+
+	if handlerFnType.NumIn() != 1 {
+		return newInvalidHandlerFnParamCountError()
+	}
+
+	routesContextType := routes.HandlerFnType().In(0)
+
+	if !routesContextType.Implements(contextType) {
+		return newInvalidContextTypeError(routesContextType)
+	}
+
+	return nil
+}
+
+func validateControllerMethod(methodName string, ctrlVal reflect.Value, routesCtxType reflect.Type) error {
+	method := ctrlVal.MethodByName(methodName)
+
+	if !method.IsValid() {
+		panic(newUnknownHttpHandlerMethodName(ctrlVal.Type(), methodName))
+	}
+
+	methodType := method.Type()
+
+	if methodType.NumIn() != 1 {
+		return newMethodParamCountError(methodName)
+	}
+
+	if methodType.In(0) != routesCtxType {
+		return newInvalidControllerMethod(methodName, routesCtxType)
+	}
+
+	return nil
 }

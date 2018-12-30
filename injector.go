@@ -4,14 +4,37 @@ import (
 	"reflect"
 )
 
-type Injector struct {
-	providers map[reflect.Type]registeredProvider
+type Routes interface {
+	Use(handlerFnValues ...reflect.Value) Routes
+
+	Handle(httpMethod string, endPoint string, handlerFnValues ...reflect.Value) Routes
+
+	HandlerFnType() reflect.Type
 }
 
-func newInjector() *Injector {
-	injector := &Injector{providers: map[reflect.Type]registeredProvider{}}
+type Injector struct {
+	routes      Routes
+	contextType reflect.Type
+	providers   map[reflect.Type]registeredProvider
+}
 
-	return injector
+func NewInjector(routes Routes) (*Injector, error) {
+	if err := validateRoutes(routes); err != nil {
+		return nil, err
+	}
+
+	injector := &Injector{
+		routes:    routes,
+		providers: map[reflect.Type]registeredProvider{},
+	}
+	injector.registerContextProvider()
+
+	return injector, nil
+}
+
+func (r *Injector) registerContextProvider() {
+	r.contextType = r.routes.HandlerFnType().In(0)
+	r.providers[r.contextType] = nil
 }
 
 func (r *Injector) registeredProviders(handler Provider) (handlerFuncProviders []*typedProvider) {
@@ -37,13 +60,13 @@ func (r *Injector) registeredProvider(providerType reflect.Type) registeredProvi
 	panic(newUnknownProviderRequestError(providerType))
 }
 
-func (r *Injector) RegisterProvider(provider Provider) bool {
+func (r *Injector) registerProvider(provider Provider) bool {
 	var dependencyProviders []*typedProvider
 
 	providerValue := funcValueOf(provider)
 	providerType := providerValue.Type()
 
-	if providerType.NumOut() > 1 {
+	if providerType.NumOut() != 1 {
 		panic(newProviderInvalidReturnCountError(providerType))
 	}
 
@@ -85,7 +108,7 @@ func (r *Injector) RegisterProviders(providers ...Provider) (err error) {
 	}()
 
 	for _, provider := range providers {
-		providerRegistered := r.RegisterProvider(provider)
+		providerRegistered := r.registerProvider(provider)
 
 		if !providerRegistered {
 			unRegistered = append(unRegistered, provider)
@@ -145,4 +168,122 @@ func (r *Injector) clone() *Injector {
 	}
 
 	return &Injector{providers: copiedProviders}
+}
+
+func (r *Injector) RegisterController(controller Controller) (err error) {
+	defer func() {
+		e := recover()
+
+		if injectErr, ok := e.(Error); ok {
+			err = injectErr
+			return
+		}
+
+		if e != nil {
+			panic(e)
+		}
+	}()
+
+	ctrlVal := reflect.ValueOf(controller)
+	ctrlType := ctrlVal.Type()
+
+	ctrlFieldProviders := r.controllerProviders(ctrlVal)
+
+	for route, handlerMethodName := range controller.Routes() {
+		if validationErr := validateControllerMethod(handlerMethodName, ctrlVal, r.contextType); validationErr != nil {
+			panic(validationErr)
+		}
+
+		httpMethod := handlerHttpMethod(handlerMethodName)
+
+		r.routes = r.routes.Handle(
+			httpMethod,
+			route,
+			r.controllerHandler(ctrlType, handlerMethodName, ctrlFieldProviders),
+		)
+	}
+
+	return err
+}
+
+func (r *Injector) controllerHandler(ctrlType reflect.Type, handlerMethodName string, ctrlFieldProviders []*typedProvider) reflect.Value {
+	isPtrType := ctrlType.Kind() == reflect.Ptr
+
+	if isPtrType {
+		ctrlType = ctrlType.Elem()
+	}
+
+	return reflect.MakeFunc(r.routes.HandlerFnType(), func(args []reflect.Value) (results []reflect.Value) {
+		resolvedCtrl := resolveController(ctrlType, ctrlFieldProviders, r.resolvedCtxValues(args[0]))
+		ctxVal := args[0]
+
+		if isPtrType {
+			resolvedCtrl.MethodByName(handlerMethodName).Call([]reflect.Value{ctxVal})
+		} else {
+			resolvedCtrl.Elem().MethodByName(handlerMethodName).Call([]reflect.Value{ctxVal})
+		}
+
+		return
+	})
+}
+
+func (r *Injector) registerHandlerFunctions(handlers []Handler) (registeredHandlers []reflect.Value, err error) {
+	defer func() {
+		e := recover()
+
+		if injectErr, ok := e.(Error); ok {
+			err = injectErr
+			return
+		}
+
+		if e != nil {
+			panic(e)
+		}
+	}()
+
+	for _, handlerFunc := range handlers {
+		registeredHandlers = append(registeredHandlers, r.routeHandler(handlerFunc))
+	}
+
+	return registeredHandlers, err
+}
+
+func (r *Injector) routeHandler(handlerFunc Handler) reflect.Value {
+	handlerFuncValue := funcValueOf(handlerFunc)
+	handlerFuncProviders := r.registeredProviders(handlerFunc)
+
+	return reflect.MakeFunc(r.routes.HandlerFnType(), func(args []reflect.Value) (results []reflect.Value) {
+		providersValues := resolveProviders(
+			handlerFuncProviders,
+			r.resolvedCtxValues(args[0]),
+		)
+
+		handlerFuncValue.Call(providersValues)
+
+		return
+	})
+}
+
+func (r *Injector) resolvedCtxValues(ctxVal reflect.Value) resolvedValues {
+	return map[reflect.Type]reflect.Value{r.contextType: ctxVal}
+}
+
+func (r *Injector) Use(handlers ...Handler) error {
+	registeredHandlers, err := r.registerHandlerFunctions(handlers)
+
+	if err == nil {
+		r.routes = r.routes.Use(registeredHandlers...)
+	}
+
+	return err
+}
+
+func (r *Injector) Handle(httpMethod string, endPoint string, handlers ...Handler) error {
+	registeredHandlers, err := r.registerHandlerFunctions(handlers)
+
+	if err == nil {
+		r.routes = r.routes.Handle(httpMethod, endPoint, registeredHandlers...)
+	}
+
+	return err
 }
