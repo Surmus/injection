@@ -3,7 +3,7 @@ package injection
 import (
 	"context"
 	"github.com/stretchr/testify/assert"
-	"injection/test"
+	"github.com/surmus/injection/test"
 	"net/http"
 	"reflect"
 	"testing"

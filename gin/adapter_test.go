@@ -3,8 +3,8 @@ package gin
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"injection"
-	"injection/test"
+	"github.com/surmus/injection"
+	"github.com/surmus/injection/test"
 	"net/http"
 	"testing"
 )

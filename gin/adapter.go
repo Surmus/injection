@@ -2,7 +2,7 @@ package gin
 
 import (
 	"github.com/gin-gonic/gin"
-	"injection"
+	"github.com/surmus/injection"
 	"reflect"
 )
 
