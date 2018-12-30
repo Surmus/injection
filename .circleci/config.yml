@@ -27,12 +27,8 @@ jobs:
       - run: make vet
       - run: make fmt-check
 
-      - run:
-          name: Run unit tests
-          # store the results of our tests in the $TEST_RESULTS directory
-          command:
-            make test
-            go-junit-report <tmp.out > ${TEST_RESULTS}/go-test-report.xml
+      - run: make test
+      - run: go-junit-report <tmp.out > ${TEST_RESULTS}/go-test-report.xml
 
       - save_cache: # store cache in the /go/pkg directory
           key: v1-pkg-cache
