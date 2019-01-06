@@ -365,13 +365,16 @@ func TestIRoutesImpl_HEAD(t *testing.T) {
 
 func TestIRoutesImpl_Use(t *testing.T) {
 	testCases := map[string]func(t *testing.T){
-		"successfully register handler and handle request": func(t *testing.T) {
+		"successfully register middleware and intercept request after handle": func(t *testing.T) {
 			r := setupRouterWithProviders()
-			testHandlerFn := setupTestHandlerFn(t)
 
-			registrationError := r.Use(testHandlerFn)
+			registrationError := r.Use(func(c *gin.Context) {
+				c.Next()
 
-			req := test.NewRequest(testEndpoint, http.MethodHead).
+				c.String(http.StatusTeapot, "%s", test.Response)
+			})
+
+			req := test.NewRequest(test.Endpoint, http.MethodHead).
 				MustBuild().Do(test.Router)
 
 			assert.Nil(t, registrationError)
