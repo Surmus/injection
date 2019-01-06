@@ -19,6 +19,9 @@ func newAdapter(ginRoutes gin.IRoutes) *adapter {
 	}
 }
 
+// Adapt enables usage of https://github.com/gin-gonic framework with the Injector.
+// The function creates new instance of Injector from gin.IRoutes implementation.
+// For usages see adapter_test.go file
 func Adapt(ginRoutes gin.IRoutes) *injection.Injector {
 	injector, err := injection.NewInjector(newAdapter(ginRoutes))
 

@@ -6,10 +6,12 @@ import (
 	"strings"
 )
 
+// Error represents errors related with the usage of the injection package
 type Error struct {
 	error string
 }
 
+// Error returns condition errors string representation, with the nil value representing no error.
 func (e Error) Error() string {
 	return e.error
 }

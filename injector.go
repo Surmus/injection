@@ -4,6 +4,7 @@ import (
 	"reflect"
 )
 
+// Routes is used as integration layer between http library and Injector for usage see gin package
 type Routes interface {
 	Use(handlerFnValues ...reflect.Value) Routes
 
@@ -12,12 +13,16 @@ type Routes interface {
 	HandlerFnType() reflect.Type
 }
 
+// Injector acts as DI container, resolver and register for underlying Routes implementation
 type Injector struct {
 	routes      Routes
 	contextType reflect.Type
 	providers   map[reflect.Type]registeredProvider
 }
 
+// NewInjector crates new Injector instance,
+// returns error when given Routes implementation http request handler function(HandlerFnType):
+// - has more than one input parameter or the single parameter does not implement context.Context interface
 func NewInjector(routes Routes) (*Injector, error) {
 	if err := validateRoutes(routes); err != nil {
 		return nil, err
@@ -99,6 +104,12 @@ func (r *Injector) registerProvider(provider Provider) bool {
 	return true
 }
 
+// RegisterProviders registers value provider functions into DI container.
+// Providable values are saved as type/value map, one type can only have one value, providing another will overwrite old value
+// returns error when:
+// - provider is not a function
+// - value provider function returns more than one value
+// - value provider function call signature contains type which is registered or is not present as provider in providers slice
 func (r *Injector) RegisterProviders(providers ...Provider) (err error) {
 	var unRegistered []Provider
 
@@ -168,16 +179,9 @@ func (r *Injector) controllerProviders(ctrlVal reflect.Value) (ctrlFieldProvider
 	return
 }
 
-func (r *Injector) clone() *Injector {
-	copiedProviders := map[reflect.Type]registeredProvider{}
-
-	for providerType, provider := range r.providers {
-		copiedProviders[providerType] = provider
-	}
-
-	return &Injector{providers: copiedProviders}
-}
-
+// RegisterController enables given Controller implementation to have field values and http request handler function input values
+// injected from registered value providers,
+// returns error when given Controller Routes method result contains unknown Controller method
 func (r *Injector) RegisterController(controller Controller) (err error) {
 	defer func() {
 		e := recover()
@@ -280,6 +284,7 @@ func (r *Injector) resolvedCtxValues(ctxVal reflect.Value) resolvedValues {
 	return map[reflect.Type]reflect.Value{r.contextType: ctxVal}
 }
 
+// Use registers http middleware handlers, returns error when handler function signature contains unregistered values
 func (r *Injector) Use(handlers ...Handler) error {
 	registeredHandlers, err := r.registerHandlerFunctions(handlers)
 
@@ -290,6 +295,9 @@ func (r *Injector) Use(handlers ...Handler) error {
 	return err
 }
 
+// Handle registers a new request handle and middleware with the given path and method.
+// The last handler should be the real handler, the other ones should be middleware that can and should be shared among different routes.
+// Returns error when handler function signature contains unregistered values
 func (r *Injector) Handle(httpMethod string, endPoint string, handlers ...Handler) error {
 	registeredHandlers, err := r.registerHandlerFunctions(handlers)
 
