@@ -19,6 +19,7 @@ func resolveProviders(providers []*typedProvider, resolvedValues resolvedValues)
 			continue
 		}
 
+		// When calling provider.value fn resolvedValues variable will be modified with newly resolved values
 		providedVal := reflect.ValueOf(provider.value(resolvedValues))
 		provided = append(provided, providedVal)
 
@@ -65,7 +66,7 @@ func providerString(p Provider) string {
 	)
 }
 
-func handlerHttpMethod(handlerMethodName string) string {
+func handlerHTTPMethod(handlerMethodName string) string {
 	nameParts := camelcase.Split(handlerMethodName)
 
 	for _, httpMethod := range httpMethods {
@@ -109,6 +110,10 @@ func isNilValue(value reflect.Value) bool {
 	return false
 }
 
+func isPtrType(valType reflect.Type) bool {
+	return valType.Kind() == reflect.Ptr
+}
+
 func isFnType(valType reflect.Type) bool {
 	return valType.Kind() == reflect.Func
 }
@@ -135,21 +140,11 @@ func validateRoutes(routes Routes) error {
 	return nil
 }
 
-func validateControllerMethod(methodName string, ctrlVal reflect.Value, routesCtxType reflect.Type) error {
+func validateControllerMethod(methodName string, ctrlVal reflect.Value) error {
 	method := ctrlVal.MethodByName(methodName)
 
 	if !method.IsValid() {
-		panic(newUnknownHttpHandlerMethodName(ctrlVal.Type(), methodName))
-	}
-
-	methodType := method.Type()
-
-	if methodType.NumIn() != 1 {
-		return newMethodParamCountError(methodName)
-	}
-
-	if methodType.In(0) != routesCtxType {
-		return newInvalidControllerMethod(methodName, routesCtxType)
+		return newUnknownHTTPHandlerMethodName(ctrlVal.Type(), methodName)
 	}
 
 	return nil

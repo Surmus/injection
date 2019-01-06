@@ -190,7 +190,7 @@ func (r *Injector) RegisterController(controller Controller) (err error) {
 	ctrlFieldProviders := r.controllerProviders(ctrlVal)
 
 	for route, handlerMethodName := range controller.Routes() {
-		if validationErr := validateControllerMethod(handlerMethodName, ctrlVal, r.contextType); validationErr != nil {
+		if validationErr := validateControllerMethod(handlerMethodName, ctrlVal); validationErr != nil {
 			panic(validationErr)
 		}
 
