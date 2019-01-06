@@ -3,7 +3,15 @@ package test
 import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
+
+const Response = "TEST-RESPONSE"
+const Constant = "CONSTANT"
+const HttpMethod = http.MethodGet
+const CtxKey = "TEST"
+const CtxVal = "TEST"
+const Endpoint = "/test"
 
 var Router *gin.Engine
 
@@ -13,8 +21,8 @@ func Init() {
 }
 
 // MustUnMarshal tries to unmarshal given json into result object, panics when unsuccessful
-func MustUnMarshal(rawJson []byte, result interface{}) {
-	if err := json.Unmarshal(rawJson, result); err != nil {
+func MustUnMarshal(rawJSON []byte, result interface{}) {
+	if err := json.Unmarshal(rawJSON, result); err != nil {
 		panic(err)
 	}
 }

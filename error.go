@@ -24,7 +24,7 @@ func newUnknownProviderRequestError(providerType reflect.Type) Error {
 	return Error{fmt.Sprintf("cannot inject value for unregistered type %s", providerType)}
 }
 
-func newUnknownHttpHandlerMethodName(ctrlType reflect.Type, missingMethod string) Error {
+func newUnknownHTTPHandlerMethodName(ctrlType reflect.Type, missingMethod string) Error {
 	return Error{fmt.Sprintf(
 		"cannot register unknown request handler method %s for controller %s",
 		missingMethod,
@@ -57,20 +57,5 @@ func newInvalidContextTypeError(contextType reflect.Type) Error {
 	return Error{fmt.Sprintf(
 		"routes request handler context parameter(%s) does not implement context.Context interface",
 		contextType,
-	)}
-}
-
-func newMethodParamCountError(methodName string) Error {
-	return Error{fmt.Sprintf(
-		"controller method %s signature should contain one parameter with context",
-		methodName,
-	)}
-}
-
-func newInvalidControllerMethod(methodName string, routesCtxType reflect.Type) Error {
-	return Error{fmt.Sprintf(
-		"controller method %s context parameter should be same type as routes request handler context type %s",
-		methodName,
-		routesCtxType,
 	)}
 }

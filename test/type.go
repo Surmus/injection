@@ -4,9 +4,6 @@ import (
 	"context"
 )
 
-const Response = "TEST-RESPONSE"
-const Constant = "CONSTANT"
-
 type DependencyStruct struct {
 	Ctx context.Context
 }

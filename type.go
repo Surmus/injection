@@ -1,7 +1,6 @@
 package injection
 
 import (
-	"net/http"
 	"reflect"
 )
 
@@ -12,8 +11,6 @@ type Provider interface{}
 // Handler should be function with void return type, used for registering http handlers with Injector Handle and Use methods.
 // See test.type.go file for examples
 type Handler interface{}
-
-type HttpHandlerFunc func(http.ResponseWriter, *http.Request)
 
 type registeredProvider func(ctxValues resolvedValues) interface{}
 

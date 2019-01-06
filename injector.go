@@ -134,10 +134,6 @@ func (r *Injector) RegisterProviders(providers ...Provider) (err error) {
 		}
 	}
 
-	if err != nil {
-		return err
-	}
-
 	if len(unRegistered) == 0 {
 		return nil
 	}

@@ -9,7 +9,6 @@ import (
 	"testing"
 )
 
-const testEndpoint = "/test-path"
 const ctrlPostEndpoint = "/test-path-post"
 const ctrlGetEndpoint = "/test-path-get"
 
@@ -147,9 +146,9 @@ func TestIRoutesImpl_GET(t *testing.T) {
 			r := setupRouterWithProviders()
 			testHandlerFn := setupTestHandlerFn(t)
 
-			registrationError := r.Handle(http.MethodGet, testEndpoint, testHandlerFn)
+			registrationError := r.Handle(http.MethodGet, test.Endpoint, testHandlerFn)
 
-			req := test.NewRequest(testEndpoint, http.MethodGet).
+			req := test.NewRequest(test.Endpoint, http.MethodGet).
 				MustBuild().Do(test.Router)
 
 			assert.Nil(t, registrationError)
@@ -161,7 +160,7 @@ func TestIRoutesImpl_GET(t *testing.T) {
 
 			testHandlerFn := setupTestHandlerFn(t)
 
-			registrationError := r.Handle(http.MethodGet, testEndpoint, testHandlerFn)
+			registrationError := r.Handle(http.MethodGet, test.Endpoint, testHandlerFn)
 
 			assert.IsType(t, injection.Error{}, registrationError)
 		},
@@ -178,9 +177,9 @@ func TestIRoutesImpl_POST(t *testing.T) {
 			r := setupRouterWithProviders()
 			testHandlerFn := setupTestHandlerFn(t)
 
-			registrationError := r.Handle(http.MethodPost, testEndpoint, testHandlerFn)
+			registrationError := r.Handle(http.MethodPost, test.Endpoint, testHandlerFn)
 
-			req := test.NewRequest(testEndpoint, http.MethodPost).
+			req := test.NewRequest(test.Endpoint, http.MethodPost).
 				MustBuild().Do(test.Router)
 
 			assert.Nil(t, registrationError)
@@ -192,7 +191,7 @@ func TestIRoutesImpl_POST(t *testing.T) {
 
 			testHandlerFn := setupTestHandlerFn(t)
 
-			registrationError := r.Handle(http.MethodPost, testEndpoint, testHandlerFn)
+			registrationError := r.Handle(http.MethodPost, test.Endpoint, testHandlerFn)
 
 			assert.IsType(t, injection.Error{}, registrationError)
 		},
@@ -209,9 +208,9 @@ func TestIRoutesImpl_PUT(t *testing.T) {
 			r := setupRouterWithProviders()
 			testHandlerFn := setupTestHandlerFn(t)
 
-			registrationError := r.Handle(http.MethodPut, testEndpoint, testHandlerFn)
+			registrationError := r.Handle(http.MethodPut, test.Endpoint, testHandlerFn)
 
-			req := test.NewRequest(testEndpoint, http.MethodPut).
+			req := test.NewRequest(test.Endpoint, http.MethodPut).
 				MustBuild().Do(test.Router)
 
 			assert.Nil(t, registrationError)
@@ -223,7 +222,7 @@ func TestIRoutesImpl_PUT(t *testing.T) {
 
 			testHandlerFn := setupTestHandlerFn(t)
 
-			registrationError := r.Handle(http.MethodPut, testEndpoint, testHandlerFn)
+			registrationError := r.Handle(http.MethodPut, test.Endpoint, testHandlerFn)
 
 			assert.IsType(t, injection.Error{}, registrationError)
 		},
@@ -240,9 +239,9 @@ func TestIRoutesImpl_OPTIONS(t *testing.T) {
 			r := setupRouterWithProviders()
 			testHandlerFn := setupTestHandlerFn(t)
 
-			registrationError := r.Handle(http.MethodOptions, testEndpoint, testHandlerFn)
+			registrationError := r.Handle(http.MethodOptions, test.Endpoint, testHandlerFn)
 
-			req := test.NewRequest(testEndpoint, http.MethodOptions).
+			req := test.NewRequest(test.Endpoint, http.MethodOptions).
 				MustBuild().Do(test.Router)
 
 			assert.Nil(t, registrationError)
@@ -254,7 +253,7 @@ func TestIRoutesImpl_OPTIONS(t *testing.T) {
 
 			testHandlerFn := setupTestHandlerFn(t)
 
-			registrationError := r.Handle(http.MethodOptions, testEndpoint, testHandlerFn)
+			registrationError := r.Handle(http.MethodOptions, test.Endpoint, testHandlerFn)
 
 			assert.IsType(t, injection.Error{}, registrationError)
 		},
@@ -271,9 +270,9 @@ func TestIRoutesImpl_PATCH(t *testing.T) {
 			r := setupRouterWithProviders()
 			testHandlerFn := setupTestHandlerFn(t)
 
-			registrationError := r.Handle(http.MethodPatch, testEndpoint, testHandlerFn)
+			registrationError := r.Handle(http.MethodPatch, test.Endpoint, testHandlerFn)
 
-			req := test.NewRequest(testEndpoint, http.MethodPatch).
+			req := test.NewRequest(test.Endpoint, http.MethodPatch).
 				MustBuild().Do(test.Router)
 
 			assert.Nil(t, registrationError)
@@ -285,7 +284,7 @@ func TestIRoutesImpl_PATCH(t *testing.T) {
 
 			testHandlerFn := setupTestHandlerFn(t)
 
-			registrationError := r.Handle(http.MethodPatch, testEndpoint, testHandlerFn)
+			registrationError := r.Handle(http.MethodPatch, test.Endpoint, testHandlerFn)
 
 			assert.IsType(t, injection.Error{}, registrationError)
 		},
@@ -302,9 +301,9 @@ func TestIRoutesImpl_DELETE(t *testing.T) {
 			r := setupRouterWithProviders()
 			testHandlerFn := setupTestHandlerFn(t)
 
-			registrationError := r.Handle(http.MethodDelete, testEndpoint, testHandlerFn)
+			registrationError := r.Handle(http.MethodDelete, test.Endpoint, testHandlerFn)
 
-			req := test.NewRequest(testEndpoint, http.MethodDelete).
+			req := test.NewRequest(test.Endpoint, http.MethodDelete).
 				MustBuild().Do(test.Router)
 
 			assert.Nil(t, registrationError)
@@ -316,7 +315,7 @@ func TestIRoutesImpl_DELETE(t *testing.T) {
 
 			testHandlerFn := setupTestHandlerFn(t)
 
-			registrationError := r.Handle(http.MethodDelete, testEndpoint, testHandlerFn)
+			registrationError := r.Handle(http.MethodDelete, test.Endpoint, testHandlerFn)
 
 			assert.IsType(t, injection.Error{}, registrationError)
 		},
@@ -333,9 +332,9 @@ func TestIRoutesImpl_HEAD(t *testing.T) {
 			r := setupRouterWithProviders()
 			testHandlerFn := setupTestHandlerFn(t)
 
-			registrationError := r.Handle(http.MethodHead, testEndpoint, testHandlerFn)
+			registrationError := r.Handle(http.MethodHead, test.Endpoint, testHandlerFn)
 
-			req := test.NewRequest(testEndpoint, http.MethodHead).
+			req := test.NewRequest(test.Endpoint, http.MethodHead).
 				MustBuild().Do(test.Router)
 
 			assert.Nil(t, registrationError)
@@ -347,7 +346,7 @@ func TestIRoutesImpl_HEAD(t *testing.T) {
 
 			testHandlerFn := setupTestHandlerFn(t)
 
-			registrationError := r.Handle(http.MethodHead, testEndpoint, testHandlerFn)
+			registrationError := r.Handle(http.MethodHead, test.Endpoint, testHandlerFn)
 
 			assert.IsType(t, injection.Error{}, registrationError)
 		},
