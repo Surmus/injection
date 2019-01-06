@@ -38,10 +38,18 @@ func (r *Injector) registerContextProvider() {
 }
 
 func (r *Injector) registeredProviders(handler Provider) (handlerFuncProviders []*typedProvider) {
-	handlerType := reflect.TypeOf(handler)
+	var handlerType reflect.Type
+	var firstFnParamIndex int
 
-	for i := 0; i < handlerType.NumIn(); i++ {
-		dependencyType := handlerType.In(i)
+	if handlerMethod, ok := handler.(reflect.Method); ok {
+		handlerType = handlerMethod.Func.Type()
+		firstFnParamIndex = 1 // first param for method type is receiver, ignore it
+	} else {
+		handlerType = reflect.TypeOf(handler)
+	}
+
+	for ; firstFnParamIndex < handlerType.NumIn(); firstFnParamIndex++ {
+		dependencyType := handlerType.In(firstFnParamIndex)
 
 		handlerFuncProviders = append(
 			handlerFuncProviders,
@@ -194,7 +202,7 @@ func (r *Injector) RegisterController(controller Controller) (err error) {
 			panic(validationErr)
 		}
 
-		httpMethod := handlerHttpMethod(handlerMethodName)
+		httpMethod := handlerHTTPMethod(handlerMethodName)
 
 		r.routes = r.routes.Handle(
 			httpMethod,
@@ -207,20 +215,24 @@ func (r *Injector) RegisterController(controller Controller) (err error) {
 }
 
 func (r *Injector) controllerHandler(ctrlType reflect.Type, handlerMethodName string, ctrlFieldProviders []*typedProvider) reflect.Value {
-	isPtrType := ctrlType.Kind() == reflect.Ptr
-
-	if isPtrType {
-		ctrlType = ctrlType.Elem()
-	}
+	handlerMethodType, _ := ctrlType.MethodByName(handlerMethodName)
+	handlerMethodProviders := r.registeredProviders(handlerMethodType)
 
 	return reflect.MakeFunc(r.routes.HandlerFnType(), func(args []reflect.Value) (results []reflect.Value) {
-		resolvedCtrl := resolveController(ctrlType, ctrlFieldProviders, r.resolvedCtxValues(args[0]))
-		ctxVal := args[0]
+		resolvedValues := r.resolvedCtxValues(args[0])
 
-		if isPtrType {
-			resolvedCtrl.MethodByName(handlerMethodName).Call([]reflect.Value{ctxVal})
+		// resolveProviders fn adds any resolved value into resolvedValues variable
+		methodProvidersValues := resolveProviders(
+			handlerMethodProviders,
+			resolvedValues,
+		)
+
+		if isPtrType(ctrlType) {
+			resolvedCtrl := resolveController(ctrlType.Elem(), ctrlFieldProviders, resolvedValues)
+			resolvedCtrl.MethodByName(handlerMethodName).Call(methodProvidersValues)
 		} else {
-			resolvedCtrl.Elem().MethodByName(handlerMethodName).Call([]reflect.Value{ctxVal})
+			resolvedCtrl := resolveController(ctrlType, ctrlFieldProviders, resolvedValues)
+			resolvedCtrl.Elem().MethodByName(handlerMethodName).Call(methodProvidersValues)
 		}
 
 		return

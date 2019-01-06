@@ -60,8 +60,6 @@ func (c *PointerController) PostTest(context *gin.Context) {
 type ValueController struct {
 	primitiveValConstant string
 
-	ValueWithInnerDependency test.DependencyInterface
-
 	ValueRequiringContext *test.DependencyStruct
 
 	T *testing.T
@@ -78,17 +76,14 @@ func (c ValueController) Routes() map[string]string {
 	return map[string]string{ctrlGetEndpoint: "GetTest"}
 }
 
-func (c ValueController) GetTest(context *gin.Context) {
-	assert.NotNil(c.T, context)
+func (c ValueController) GetTest(context *gin.Context, valueWithInnerDependency test.DependencyInterface) {
 	assert.NotNil(c.T, c.ValueRequiringContext)
 	assert.Equal(c.T, test.Constant, c.primitiveValConstant)
-	assert.NotNil(c.T, c.ValueWithInnerDependency)
-
-	assert.Equal(c.T, context, c.ValueRequiringContext.Ctx)
+	assert.NotNil(c.T, valueWithInnerDependency)
 
 	assert.True(
 		c.T,
-		c.ValueWithInnerDependency.(*test.DependencyStruct) == c.ValueRequiringContext,
+		valueWithInnerDependency.(*test.DependencyStruct) == c.ValueRequiringContext,
 		"valueWithInnerDependency interface should be created from valueRequiringContext",
 	)
 
