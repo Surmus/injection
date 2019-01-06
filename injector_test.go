@@ -9,19 +9,12 @@ import (
 	"testing"
 )
 
-const testHttpMethod = http.MethodGet
-const testCtxKey = "TEST"
-const testCtxVal = "TEST"
-const testEndpoint = "/test"
-
-func testHandlerFn(ctx context.Context) {}
-
 type testRoutes struct {
 	t *testing.T
 }
 
 func (r *testRoutes) Use(handlerFnValues ...reflect.Value) Routes {
-	ctx := context.WithValue(context.Background(), testCtxKey, testCtxVal)
+	ctx := context.WithValue(context.Background(), test.CtxKey, test.CtxVal)
 	ctxValue := reflect.ValueOf(ctx)
 
 	for _, handlerValue := range handlerFnValues {
@@ -32,10 +25,10 @@ func (r *testRoutes) Use(handlerFnValues ...reflect.Value) Routes {
 }
 
 func (r *testRoutes) Handle(httpMethod string, endPoint string, handlerFnValues ...reflect.Value) Routes {
-	assert.Equal(r.t, testEndpoint, endPoint)
-	assert.Equal(r.t, testHttpMethod, httpMethod)
+	assert.Equal(r.t, test.Endpoint, endPoint)
+	assert.Equal(r.t, test.HttpMethod, httpMethod)
 
-	ctx := context.WithValue(context.Background(), testCtxKey, testCtxVal)
+	ctx := context.WithValue(context.Background(), test.CtxKey, test.CtxVal)
 	ctxValue := reflect.ValueOf(ctx)
 
 	for _, handlerValue := range handlerFnValues {
@@ -73,85 +66,127 @@ func (*nonContextHandlerRoutes) HandlerFnType() reflect.Type {
 	return reflect.TypeOf(func(interface{}) {})
 }
 
-type TestController struct {
-	t *testing.T
+func testHandlerFn(ctx context.Context) {}
+
+func setupTestHandlerFn(t *testing.T) interface{} {
+	return func(
+		ctx context.Context,
+		valueWithInnerDependency test.DependencyInterface,
+		valueRequiringContext *test.DependencyStruct,
+		providedConstant string,
+	) {
+		assert.NotNil(t, ctx)
+		assert.NotNil(t, valueRequiringContext)
+		assert.Equal(t, test.Constant, providedConstant)
+		assert.NotNil(t, valueWithInnerDependency)
+
+		assert.Equal(t, ctx, valueRequiringContext.Ctx)
+
+		assert.True(
+			t,
+			valueWithInnerDependency.(*test.DependencyStruct) == valueRequiringContext,
+			"valueWithInnerDependency interface should be created from valueRequiringContext",
+		)
+
+		assert.Equal(t, test.CtxVal, ctx.Value(test.CtxKey))
+	}
 }
-
-func (c *TestController) Routes() map[string]string {
-	return map[string]string{testEndpoint: "GetTest"}
-}
-
-func (c *TestController) GetTest(context context.Context) {
-	assert.Equal(c.t, testCtxVal, context.Value(testCtxKey).(string))
-}
-
-type InvalidMethodParamCountCtrl struct {
-	TestController
-}
-
-func (c *InvalidMethodParamCountCtrl) GetTest() {}
-
-type InvalidMethodCtxValueTypeCtrl struct {
-	TestController
-}
-
-func (c *InvalidMethodCtxValueTypeCtrl) GetTest(invalidParam string) {}
 
 func setupInjector(t *testing.T) *Injector {
+	valueRequiringContextProvider := func(ctx context.Context) *test.DependencyStruct {
+		return &test.DependencyStruct{Ctx: ctx}
+	}
+
+	constantProvider := func() string {
+		return test.Constant
+	}
+
+	valueWithInnerDependencyProvider := func(dependency *test.DependencyStruct) test.DependencyInterface {
+		return dependency
+	}
+
 	injector, _ := NewInjector(&testRoutes{t: t})
+	injector.RegisterProviders(valueWithInnerDependencyProvider, valueRequiringContextProvider, constantProvider)
 
 	return injector
 }
 
 func TestInjector_Handle(t *testing.T) {
-	var ctxVal string
+	testCases := map[string]func(t *testing.T){
+		"successfully register handler and handle request": func(t *testing.T) {
+			injector := setupInjector(t)
 
-	injector := setupInjector(t)
+			handleRegisterErr := injector.Handle(http.MethodGet, test.Endpoint, setupTestHandlerFn(t))
 
-	handleRegisterErr := injector.Handle(http.MethodGet, testEndpoint, func(ctx context.Context) {
-		ctxVal = ctx.Value(testCtxKey).(string)
-	})
+			assert.Nil(t, handleRegisterErr)
+		},
+		"fail to register handler with unregistered dependencies": func(t *testing.T) {
+			injector, _ := NewInjector(&testRoutes{t: t})
+			testHandlerFn := setupTestHandlerFn(t)
 
-	assert.Nil(t, handleRegisterErr)
-	assert.Equal(t, testCtxVal, ctxVal)
+			registrationError := injector.Handle(http.MethodGet, test.Endpoint, testHandlerFn)
+
+			assert.IsType(t, Error{}, registrationError)
+		},
+	}
+
+	for testName, testCase := range testCases {
+		t.Run(testName, testCase)
+	}
 }
 
 func TestInjector_Use(t *testing.T) {
-	var ctxVal string
+	testCases := map[string]func(t *testing.T){
+		"successfully register handler and handle request": func(t *testing.T) {
+			injector := setupInjector(t)
 
-	injector := setupInjector(t)
+			handleRegisterErr := injector.Use(setupTestHandlerFn(t))
 
-	handleRegisterErr := injector.Use(func(ctx context.Context) {
-		ctxVal = ctx.Value(testCtxKey).(string)
-	})
+			assert.Nil(t, handleRegisterErr)
+		},
+		"fail to register handler with unregistered dependencies": func(t *testing.T) {
+			injector, _ := NewInjector(&testRoutes{t: t})
+			testHandlerFn := setupTestHandlerFn(t)
 
-	assert.Nil(t, handleRegisterErr)
-	assert.Equal(t, testCtxVal, ctxVal)
+			registrationError := injector.Use(testHandlerFn)
+
+			assert.IsType(t, Error{}, registrationError)
+		},
+	}
+
+	for testName, testCase := range testCases {
+		t.Run(testName, testCase)
+	}
 }
 
 func TestInjector_RegisterController(t *testing.T) {
 	tests := map[string]func(t *testing.T){
-		"should successfully register controller with injector": func(t *testing.T) {
-			injector := setupInjector(t)
+		"successfully for Controller pointer receiver request handler method": func(t *testing.T) {
+			r := setupInjector(t)
 
-			registrationError := injector.RegisterController(&TestController{t: t})
+			registrationError := r.RegisterController(test.NewPointerController(t))
 
 			assert.Nil(t, registrationError)
 		},
-		"should fail to register controller with invalid controller route handler signature param count": func(t *testing.T) {
-			injector := setupInjector(t)
+		"successfully for Controller value receiver request handler method": func(t *testing.T) {
+			r := setupInjector(t)
 
-			registrationError := injector.RegisterController(&InvalidMethodParamCountCtrl{TestController{t: t}})
+			registrationError := r.RegisterController(test.NewValueController(t))
 
-			assert.NotNil(t, registrationError)
+			assert.Nil(t, registrationError)
+		},
+		"fail registering Controller with unregistered dependencies": func(t *testing.T) {
+			injector, _ := NewInjector(&testRoutes{t: t})
+
+			registrationError := injector.RegisterController(test.NewPointerController(t))
+
 			assert.IsType(t, Error{}, registrationError)
 		},
-		"should fail to register controller with invalid controller route handler context parameter": func(t *testing.T) {
-			injector := setupInjector(t)
+		"fail registering Controller with incorrect routes mapping": func(t *testing.T) {
+			injector, _ := NewInjector(&testRoutes{t: t})
 
-			registrationError := injector.RegisterController(&InvalidMethodCtxValueTypeCtrl{TestController{t: t}})
+			registrationError := injector.RegisterController(new(test.InvalidRoutesMapController))
 
-			assert.NotNil(t, registrationError)
 			assert.IsType(t, Error{}, registrationError)
 		},
 	}
@@ -235,7 +270,9 @@ func TestInjector_RegisterProviders(t *testing.T) {
 		"should fail to register provider with unregistered dependency": func(t *testing.T) {
 			injector, _ := NewInjector(&testRoutes{t: t})
 
-			err := injector.RegisterProviders(func(dependency *test.DependencyStruct) {})
+			err := injector.RegisterProviders(func(dependency *test.DependencyStruct) test.DependencyInterface {
+				return dependency
+			})
 
 			assert.NotNil(t, err)
 			assert.IsType(t, Error{}, err)
