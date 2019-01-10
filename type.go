@@ -51,7 +51,7 @@ type Controller interface {
 // BaseController can be embedded into Controller implementations in order to skip implementing Middleware interface method
 type BaseController struct{}
 
-// MiddleWares tells injector that Controller routes do not use any middleware
+// Middleware tells injector that Controller routes do not use any middleware
 func (c *BaseController) Middleware() map[string][]Handler {
 	return make(map[string][]Handler)
 }
