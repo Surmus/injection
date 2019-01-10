@@ -66,6 +66,107 @@ func (*nonContextHandlerRoutes) HandlerFnType() reflect.Type {
 	return reflect.TypeOf(func(interface{}) {})
 }
 
+type PointerController struct {
+	BaseController
+
+	primitiveZeroValue int
+
+	PrimitiveValConstant string
+
+	Context context.Context
+
+	valueWithInnerDependency test.DependencyInterface
+
+	valueRequiringContext *test.DependencyStruct
+
+	t *testing.T
+}
+
+func NewPointerController(t *testing.T) *PointerController {
+	return &PointerController{
+		PrimitiveValConstant: test.Constant,
+		t:                    t,
+	}
+}
+
+func (c *PointerController) Routes() map[string]string {
+	return map[string]string{test.Endpoint: "GetTest"}
+}
+
+func (c *PointerController) GetTest(context context.Context) {
+	assert.NotNil(c.t, c.Context)
+	assert.NotNil(c.t, c.valueRequiringContext)
+	assert.Equal(c.t, test.Constant, c.PrimitiveValConstant)
+	assert.NotNil(c.t, c.valueWithInnerDependency)
+	assert.Equal(c.t, 0, c.primitiveZeroValue)
+
+	assert.Equal(c.t, c.Context, c.valueRequiringContext.Ctx)
+	assert.Equal(c.t, c.Context, context)
+
+	assert.True(
+		c.t,
+		c.valueWithInnerDependency.(*test.DependencyStruct) == c.valueRequiringContext,
+		"valueWithInnerDependency interface should be created from valueRequiringContext",
+	)
+}
+
+type ValueController struct {
+	primitiveValConstant string
+
+	ValueRequiringContext *test.DependencyStruct
+
+	T *testing.T
+}
+
+func NewValueController(t *testing.T) ValueController {
+	return ValueController{
+		primitiveValConstant: test.Constant,
+		T:                    t,
+	}
+}
+
+func (c ValueController) Routes() map[string]string {
+	return map[string]string{test.Endpoint: "HandleRequest"}
+}
+
+func (c ValueController) Middleware() map[string][]Handler {
+	middlewareFnExecuted = false
+
+	return map[string][]Handler{"HandleRequest": {
+		func(valueRequiringContext *test.DependencyStruct) {
+			middlewareFnExecuted = true
+		},
+	}}
+}
+
+func (c ValueController) HandleRequest(context context.Context, valueWithInnerDependency test.DependencyInterface) {
+	assert.NotNil(c.T, c.ValueRequiringContext)
+	assert.Equal(c.T, test.Constant, c.primitiveValConstant)
+	assert.NotNil(c.T, valueWithInnerDependency)
+
+	assert.True(
+		c.T,
+		valueWithInnerDependency.(*test.DependencyStruct) == c.ValueRequiringContext,
+		"valueWithInnerDependency interface should be created from valueRequiringContext",
+	)
+}
+
+type InvalidRoutesMapController struct {
+	BaseController
+}
+
+func (c *InvalidRoutesMapController) Routes() map[string]string {
+	return map[string]string{test.Endpoint: "PostTest"}
+}
+
+type InvalidMiddlewareController struct {
+	ValueController
+}
+
+func (c InvalidMiddlewareController) Middleware() map[string][]Handler {
+	return map[string][]Handler{"HandleRequest": {"INVALID-VALUE"}}
+}
+
 func testHandlerFn(ctx context.Context) {}
 
 func setupTestHandlerFn(t *testing.T) interface{} {
