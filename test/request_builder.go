@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+// RequestBuilder helps creating complex http request using functional style
 type RequestBuilder struct {
 	method  string
 	url     string
