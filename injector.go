@@ -37,6 +37,25 @@ func NewInjector(routes Routes) (*Injector, error) {
 	return injector, nil
 }
 
+// From creates new Injector from existing by copying over all registered value providers from given Injector
+func From(from *Injector, routes Routes) (*Injector, error) {
+	if err := validateRoutes(routes); err != nil {
+		return nil, err
+	}
+
+	injector := &Injector{
+		routes:    routes,
+		providers: map[reflect.Type]registeredProvider{},
+	}
+	injector.registerContextProvider()
+
+	for providerType, provider := range from.providers {
+		injector.providers[providerType] = provider
+	}
+
+	return injector, nil
+}
+
 func (r *Injector) registerContextProvider() {
 	r.contextType = r.routes.HandlerFnType().In(0)
 	r.providers[r.contextType] = nil

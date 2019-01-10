@@ -384,3 +384,27 @@ func TestInjector_RegisterProviders(t *testing.T) {
 		t.Run(testName, testCase)
 	}
 }
+
+func TestFrom(t *testing.T) {
+	dependencyValueProvider := func(ctx context.Context) *test.DependencyStruct {
+		return &test.DependencyStruct{Ctx: ctx}
+	}
+	valueWithDependencyProvider := func(dependency *test.DependencyStruct) test.DependencyInterface {
+		return dependency
+	}
+
+	injectorFrom, _ := NewInjector(&testRoutes{t: t})
+	injectorFrom.RegisterProviders(dependencyValueProvider)
+
+	injectorCpy, cpyCreationErr := From(injectorFrom, &testRoutes{t: t})
+	regError := injectorCpy.RegisterProviders(valueWithDependencyProvider)
+
+	assert.Nil(t, cpyCreationErr)
+	assert.Nil(t, regError)
+
+	// New injector does have previously registered test.DependencyInterface
+	assert.Nil(t, injectorCpy.RegisterProviders(func(test.DependencyInterface) int { return 1 }))
+
+	// Old injector does not have previously registered test.DependencyInterface
+	assert.NotNil(t, injectorFrom.RegisterProviders(func(test.DependencyInterface) int { return 1 }))
+}

@@ -89,7 +89,9 @@ func (c ValueController) GetTest(context *gin.Context, valueWithInnerDependency 
 	context.String(http.StatusTeapot, "%s", test.Response)
 }
 
-type InvalidRoutesMapController struct{}
+type InvalidRoutesMapController struct {
+	injection.BaseController
+}
 
 func (c *InvalidRoutesMapController) Routes() map[string]string {
 	return map[string]string{ctrlPostEndpoint: "PostTest"}
@@ -364,6 +366,10 @@ func TestIRoutesImpl_Use(t *testing.T) {
 
 			registrationError := r.Use(func(c *gin.Context) {
 				c.Next()
+				c.Set(test.CtxKey, test.CtxVal) // executes after request handler, value test.CtxVal should be unavailable
+			})
+			r.Handle(http.MethodHead, test.Endpoint, func(c *gin.Context) {
+				assert.Nil(t, c.Value(test.CtxKey))
 
 				c.String(http.StatusTeapot, "%s", test.Response)
 			})
@@ -417,6 +423,16 @@ func TestIRoutesImpl_RegisterController(t *testing.T) {
 			assert.Equal(t, http.StatusTeapot, req.Response.Code)
 			assert.Equal(t, test.Response, string(req.Response.Body.Bytes()))
 		},
+		"should execute controller method middleware": func(t *testing.T) {
+			r := setupRouterWithProviders()
+
+			registrationError := r.RegisterController(NewValueController(t))
+
+			test.NewRequest(ctrlGetEndpoint, http.MethodGet).MustBuild().Do(test.Router)
+
+			assert.Nil(t, registrationError)
+			assert.True(t, middlewareFnExecuted)
+		},
 		"fail registering Controller with unregistered dependencies": func(t *testing.T) {
 			r := Adapt(gin.New())
 
@@ -430,6 +446,55 @@ func TestIRoutesImpl_RegisterController(t *testing.T) {
 			registrationError := r.RegisterController(new(InvalidRoutesMapController))
 
 			assert.IsType(t, injection.Error{}, registrationError)
+		},
+	}
+
+	for testName, testCase := range tests {
+		t.Run(testName, testCase)
+	}
+}
+
+func TestAdaptToExisting(t *testing.T) {
+	tests := map[string]func(t *testing.T){
+		"verify injector copy middleware does not bleed over to original": func(t *testing.T) {
+			test.Init()
+
+			var triggeredMiddleWaresCount int
+
+			originalInjector := Adapt(test.Router)
+			originalInjector.Use(func() {
+				triggeredMiddleWaresCount++
+			})
+
+			originalCpy := AdaptToExisting(originalInjector, test.Router.Group(test.Endpoint))
+			originalCpy.Use(func() {
+				triggeredMiddleWaresCount++
+			})
+
+			test.NewRequest("/", http.MethodGet).MustBuild().Do(test.Router)
+
+			assert.Equal(t, 1, triggeredMiddleWaresCount)
+		},
+		"verify injector copy executes original and copy middleware": func(t *testing.T) {
+			test.Init()
+
+			var triggeredMiddleWaresCount int
+
+			originalInjector := Adapt(test.Router)
+			originalInjector.Use(func() {
+				triggeredMiddleWaresCount++
+			})
+
+			originalCpy := AdaptToExisting(originalInjector, test.Router.Group(test.Endpoint))
+			originalCpy.Use(func() {
+				triggeredMiddleWaresCount++
+			})
+
+			originalCpy.Handle(http.MethodGet, "/", func() {})
+
+			test.NewRequest(test.Endpoint+"/", http.MethodGet).MustBuild().Do(test.Router)
+
+			assert.Equal(t, 2, triggeredMiddleWaresCount)
 		},
 	}
 
