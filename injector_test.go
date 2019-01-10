@@ -9,6 +9,8 @@ import (
 	"testing"
 )
 
+var middlewareFnExecuted bool
+
 type testRoutes struct {
 	t *testing.T
 }
@@ -265,28 +267,43 @@ func TestInjector_RegisterController(t *testing.T) {
 		"successfully for Controller pointer receiver request handler method": func(t *testing.T) {
 			r := setupInjector(t)
 
-			registrationError := r.RegisterController(test.NewPointerController(t))
+			registrationError := r.RegisterController(NewPointerController(t))
 
 			assert.Nil(t, registrationError)
 		},
 		"successfully for Controller value receiver request handler method": func(t *testing.T) {
 			r := setupInjector(t)
 
-			registrationError := r.RegisterController(test.NewValueController(t))
+			registrationError := r.RegisterController(NewValueController(t))
 
 			assert.Nil(t, registrationError)
+		},
+		"should execute controller method middleware": func(t *testing.T) {
+			r := setupInjector(t)
+
+			registrationError := r.RegisterController(NewValueController(t))
+
+			assert.Nil(t, registrationError)
+			assert.True(t, middlewareFnExecuted)
+		},
+		"fail registering Controller with invalid method middleware": func(t *testing.T) {
+			r := setupInjector(t)
+
+			registrationError := r.RegisterController(InvalidMiddlewareController{ValueController{T: t}})
+
+			assert.IsType(t, Error{}, registrationError)
 		},
 		"fail registering Controller with unregistered dependencies": func(t *testing.T) {
 			injector, _ := NewInjector(&testRoutes{t: t})
 
-			registrationError := injector.RegisterController(test.NewPointerController(t))
+			registrationError := injector.RegisterController(NewPointerController(t))
 
 			assert.IsType(t, Error{}, registrationError)
 		},
 		"fail registering Controller with incorrect routes mapping": func(t *testing.T) {
 			injector, _ := NewInjector(&testRoutes{t: t})
 
-			registrationError := injector.RegisterController(new(test.InvalidRoutesMapController))
+			registrationError := injector.RegisterController(new(InvalidRoutesMapController))
 
 			assert.IsType(t, Error{}, registrationError)
 		},

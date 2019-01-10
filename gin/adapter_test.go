@@ -9,10 +9,14 @@ import (
 	"testing"
 )
 
+var middlewareFnExecuted bool
+
 const ctrlPostEndpoint = "/test-path-post"
 const ctrlGetEndpoint = "/test-path-get"
 
 type PointerController struct {
+	injection.BaseController
+
 	primitiveZeroValue int
 
 	PrimitiveValConstant string
@@ -57,6 +61,8 @@ func (c *PointerController) PostTest(context *gin.Context) {
 }
 
 type ValueController struct {
+	injection.BaseController
+
 	primitiveValConstant string
 
 	ValueRequiringContext *test.DependencyStruct
@@ -73,6 +79,16 @@ func NewValueController(t *testing.T) ValueController {
 
 func (c ValueController) Routes() map[string]string {
 	return map[string]string{ctrlGetEndpoint: "GetTest"}
+}
+
+func (c ValueController) Middleware() map[string][]injection.Handler {
+	middlewareFnExecuted = false
+
+	return map[string][]injection.Handler{"GetTest": {
+		func(ctx *gin.Context) {
+			middlewareFnExecuted = true
+		},
+	}}
 }
 
 func (c ValueController) GetTest(context *gin.Context, valueWithInnerDependency test.DependencyInterface) {

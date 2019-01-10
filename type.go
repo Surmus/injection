@@ -41,6 +41,19 @@ type Controller interface {
 	// example: map[string]string{"/test-http-path": "PostMethodName"}
 	// "/test-http-path" being http request endpoint and "PostMethodName" method on the Controller method used as request handler
 	Routes() map[string]string
+
+	// Middleware is used to tell injector which methods use middleware in their request handling chain
+	// should return map of Controller method / middleware functions slice
+	// example: map[string][]Handler{"PostMethodName": {func() { fmt.Println("middleware executed") }}}
+	Middleware() map[string][]Handler
+}
+
+// BaseController can be embedded into Controller implementations in order to skip implementing Middleware interface method
+type BaseController struct{}
+
+// MiddleWares tells injector that Controller routes do not use any middleware
+func (c *BaseController) Middleware() map[string][]Handler {
+	return make(map[string][]Handler)
 }
 
 type resolvedValues map[reflect.Type]reflect.Value

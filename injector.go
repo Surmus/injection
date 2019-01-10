@@ -223,14 +223,27 @@ func (r *Injector) RegisterController(controller Controller) (err error) {
 
 		httpMethod := handlerHTTPMethod(handlerMethodName)
 
+		routeHandlers := r.routeMiddlewareHandlers(controller.Middleware()[handlerMethodName])
+		routeHandlers = append(routeHandlers, r.controllerHandler(ctrlType, handlerMethodName, ctrlFieldProviders))
+
 		r.routes = r.routes.Handle(
 			httpMethod,
 			route,
-			r.controllerHandler(ctrlType, handlerMethodName, ctrlFieldProviders),
+			routeHandlers...,
 		)
 	}
 
 	return err
+}
+
+func (r *Injector) routeMiddlewareHandlers(handlers []Handler) []reflect.Value {
+	registeredHandlers, err := r.registerHandlerFunctions(handlers)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return registeredHandlers
 }
 
 func (r *Injector) controllerHandler(ctrlType reflect.Type, handlerMethodName string, ctrlFieldProviders []*typedProvider) reflect.Value {
