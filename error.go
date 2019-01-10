@@ -17,7 +17,7 @@ func (e Error) Error() string {
 }
 
 func newProviderInvalidReturnCountError(providerType reflect.Type) Error {
-	return Error{fmt.Sprintf("cannot register value(%s) with multiple return values", providerType)}
+	return Error{fmt.Sprintf("cannot register value(%s) with multiple or no return values", providerType)}
 }
 
 func newUnknownProviderRequestError(providerType reflect.Type) Error {
