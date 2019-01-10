@@ -1,7 +1,6 @@
 package test
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"net/http/httptest"
 )
@@ -17,7 +16,7 @@ func newRequest(request *http.Request) *Request {
 }
 
 // Do executes mock http request
-func (r *Request) Do(e *gin.Engine) *Request {
+func (r *Request) Do(e http.Handler) *Request {
 	e.ServeHTTP(r.Response, r.request)
 
 	return r
