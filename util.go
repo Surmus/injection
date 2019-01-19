@@ -149,3 +149,15 @@ func validateControllerMethod(methodName string, ctrlVal reflect.Value) error {
 
 	return nil
 }
+
+func routesList(controller Controller) []*controllerRoute {
+	var routesList []*controllerRoute
+
+	for route, routeHandlerMethods := range controller.Routes() {
+		for _, routeHandlerMethod := range routeHandlerMethods {
+			routesList = append(routesList, &controllerRoute{route: route, methodName: routeHandlerMethod})
+		}
+	}
+
+	return routesList
+}

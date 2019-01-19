@@ -91,8 +91,8 @@ func NewPointerController(t *testing.T) *PointerController {
 	}
 }
 
-func (c *PointerController) Routes() map[string]string {
-	return map[string]string{test.Endpoint: "GetTest"}
+func (c *PointerController) Routes() map[string][]string {
+	return map[string][]string{test.Endpoint: {"GetTest"}}
 }
 
 func (c *PointerController) GetTest(context context.Context) {
@@ -127,8 +127,8 @@ func NewValueController(t *testing.T) ValueController {
 	}
 }
 
-func (c ValueController) Routes() map[string]string {
-	return map[string]string{test.Endpoint: "HandleRequest"}
+func (c ValueController) Routes() map[string][]string {
+	return map[string][]string{test.Endpoint: {"HandleRequest"}}
 }
 
 func (c ValueController) Middleware() map[string][]Handler {
@@ -157,8 +157,8 @@ type InvalidRoutesMapController struct {
 	BaseController
 }
 
-func (c *InvalidRoutesMapController) Routes() map[string]string {
-	return map[string]string{test.Endpoint: "PostTest"}
+func (c *InvalidRoutesMapController) Routes() map[string][]string {
+	return map[string][]string{test.Endpoint: {"PostTest"}}
 }
 
 type InvalidMiddlewareController struct {

@@ -216,19 +216,19 @@ func (r *Injector) RegisterController(controller Controller) (err error) {
 
 	ctrlFieldProviders := r.controllerProviders(ctrlVal)
 
-	for route, handlerMethodName := range controller.Routes() {
-		if validationErr := validateControllerMethod(handlerMethodName, ctrlVal); validationErr != nil {
+	for _, controllerRoute := range routesList(controller) {
+		if validationErr := validateControllerMethod(controllerRoute.methodName, ctrlVal); validationErr != nil {
 			panic(validationErr)
 		}
 
-		httpMethod := handlerHTTPMethod(handlerMethodName)
+		httpMethod := handlerHTTPMethod(controllerRoute.methodName)
 
-		routeHandlers := r.routeMiddlewareHandlers(controller.Middleware()[handlerMethodName])
-		routeHandlers = append(routeHandlers, r.controllerHandler(ctrlType, handlerMethodName, ctrlFieldProviders))
+		routeHandlers := r.routeMiddlewareHandlers(controller.Middleware()[controllerRoute.methodName])
+		routeHandlers = append(routeHandlers, r.controllerHandler(ctrlType, controllerRoute.methodName, ctrlFieldProviders))
 
 		r.routes = r.routes.Handle(
 			httpMethod,
-			route,
+			controllerRoute.route,
 			routeHandlers...,
 		)
 	}

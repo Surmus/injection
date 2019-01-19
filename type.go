@@ -37,10 +37,10 @@ func staticValueRegisterProvider(value reflect.Value) registeredProvider {
 // when method name does not match any known http method, GET is used
 // See test.type.go file for examples
 type Controller interface {
-	// Routes should return mapping of http route endpoint / Controller method
-	// example: map[string]string{"/test-http-path": "PostMethodName"}
-	// "/test-http-path" being http request endpoint and "PostMethodName" method on the Controller method used as request handler
-	Routes() map[string]string
+	// Routes should return mapping of http route endpoint / Controller methods
+	// example: map[string][]string{"/test-http-path": {"PostMethodName"}}
+	// "/test-http-path" being http request endpoint and "PostMethodName" as request handler for POST http method
+	Routes() map[string][]string
 
 	// Middleware is used to tell injector which methods use middleware in their request handling chain
 	// should return map of Controller method / middleware functions slice
@@ -65,4 +65,9 @@ type typedProvider struct {
 
 func newTypedProvider(providerType reflect.Type, provider registeredProvider) *typedProvider {
 	return &typedProvider{kind: providerType, value: provider}
+}
+
+type controllerRoute struct {
+	route      string
+	methodName string
 }

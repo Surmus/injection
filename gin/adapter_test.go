@@ -37,8 +37,8 @@ func NewPointerController(t *testing.T) *PointerController {
 	}
 }
 
-func (c *PointerController) Routes() map[string]string {
-	return map[string]string{ctrlPostEndpoint: "PostTest"}
+func (c *PointerController) Routes() map[string][]string {
+	return map[string][]string{ctrlPostEndpoint: {"PostTest"}}
 }
 
 func (c *PointerController) PostTest(context *gin.Context) {
@@ -77,8 +77,8 @@ func NewValueController(t *testing.T) ValueController {
 	}
 }
 
-func (c ValueController) Routes() map[string]string {
-	return map[string]string{ctrlGetEndpoint: "GetTest"}
+func (c ValueController) Routes() map[string][]string {
+	return map[string][]string{ctrlGetEndpoint: {"GetTest"}}
 }
 
 func (c ValueController) Middleware() map[string][]injection.Handler {
@@ -109,8 +109,8 @@ type InvalidRoutesMapController struct {
 	injection.BaseController
 }
 
-func (c *InvalidRoutesMapController) Routes() map[string]string {
-	return map[string]string{ctrlPostEndpoint: "PostTest"}
+func (c *InvalidRoutesMapController) Routes() map[string][]string {
+	return map[string][]string{ctrlPostEndpoint: {"PostTest"}}
 }
 
 func setupRouterWithProviders() *injection.Injector {
