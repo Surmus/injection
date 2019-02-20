@@ -5,11 +5,15 @@ import (
 )
 
 // Provider should be function returning one value, used for registering value providers with Injector RegisterProviders method.
-// See test.type.go file for examples
+// See injector_test.go file for examples
 type Provider interface{}
 
+// SingletonProvider functions similarly to Provider with the exception of being resolved only once.
+// All successive resolve request return the value resolved at the first time
+type SingletonProvider Provider
+
 // Handler should be function with void return type, used for registering http handlers with Injector Handle and Use methods.
-// See test.type.go file for examples
+// See injector_test.go file for examples
 type Handler interface{}
 
 type registeredProvider func(ctxValues resolvedValues) interface{}
@@ -35,7 +39,7 @@ func staticValueRegisterProvider(value reflect.Value) registeredProvider {
 // - PatchMethodName - handles PATCH request
 // - TraceMethodName - handles TRACE request
 // when method name does not match any known http method, GET is used
-// See test.type.go file for examples
+// See injector_test.go file for examples
 type Controller interface {
 	// Routes should return mapping of http route endpoint / Controller methods
 	// example: map[string][]string{"/test-http-path": {"PostMethodName"}}

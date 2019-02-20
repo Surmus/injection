@@ -223,6 +223,24 @@ func TestInjector_Handle(t *testing.T) {
 
 			assert.Nil(t, handleRegisterErr)
 		},
+		"resolve SingletonProvider only once": func(t *testing.T) {
+			var singletonValueProvider SingletonProvider
+			var resolvedValues []*test.DependencyStruct
+
+			singletonValueProvider = func() *test.DependencyStruct { return &test.DependencyStruct{} }
+			injector, _ := NewInjector(&testRoutes{t: t})
+			err := injector.RegisterProviders(singletonValueProvider)
+
+			for i := 0; i < 2; i++ {
+				injector.Handle(http.MethodGet, test.Endpoint, func(singletonVal *test.DependencyStruct) {
+					resolvedValues = append(resolvedValues, singletonVal)
+				})
+			}
+
+			assert.Nil(t, err)
+			assert.Len(t, resolvedValues, 2)
+			assert.True(t, resolvedValues[0] == resolvedValues[1], "both values in resolvedValues should be same instance")
+		},
 		"fail to register handler with unregistered dependencies": func(t *testing.T) {
 			injector, _ := NewInjector(&testRoutes{t: t})
 			testHandlerFn := setupTestHandlerFn(t)

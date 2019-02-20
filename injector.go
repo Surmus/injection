@@ -114,10 +114,16 @@ func (r *Injector) registerProvider(provider Provider) bool {
 		return false
 	}
 
-	r.providers[providerType.Out(0)] = func(resolvedValues resolvedValues) interface{} {
-		resolvedValue := providerValue.Call(resolveProviders(dependencyProviders, resolvedValues))
+	providedValueType := providerType.Out(0)
+	r.providers[providedValueType] = func(resolvedValues resolvedValues) interface{} {
+		callResults := providerValue.Call(resolveProviders(dependencyProviders, resolvedValues))
+		resolvedValue := callResults[0].Interface()
 
-		return resolvedValue[0].Interface()
+		if _, ok := provider.(SingletonProvider); ok {
+			r.providers[providedValueType] = singletonProvider(resolvedValue)
+		}
+
+		return resolvedValue
 	}
 
 	return true
