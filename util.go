@@ -162,7 +162,7 @@ func routesList(controller Controller) []*controllerRoute {
 	return routesList
 }
 
-func singletonProvider(singletonValue interface{}) registeredProvider {
+func registeredSingletonProvider(singletonValue interface{}) registeredProvider {
 	return func(resolvedValues) interface{} {
 		return singletonValue
 	}

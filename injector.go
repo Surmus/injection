@@ -94,9 +94,16 @@ func (r *Injector) registeredProvider(providerType reflect.Type) registeredProvi
 
 func (r *Injector) registerProvider(provider Provider) bool {
 	var dependencyProviders []*typedProvider
+	var providerValue reflect.Value
+	var providerType reflect.Type
 
-	providerValue := funcValueOf(provider)
-	providerType := providerValue.Type()
+	if singletonProvider, ok := provider.(*singletonProvider); ok {
+		providerValue = funcValueOf(singletonProvider.provider)
+		providerType = providerValue.Type()
+	} else {
+		providerValue = funcValueOf(provider)
+		providerType = providerValue.Type()
+	}
 
 	if providerType.NumOut() != 1 {
 		panic(newProviderInvalidReturnCountError(providerType))
@@ -119,8 +126,8 @@ func (r *Injector) registerProvider(provider Provider) bool {
 		callResults := providerValue.Call(resolveProviders(dependencyProviders, resolvedValues))
 		resolvedValue := callResults[0].Interface()
 
-		if _, ok := provider.(SingletonProvider); ok {
-			r.providers[providedValueType] = singletonProvider(resolvedValue)
+		if _, ok := provider.(*singletonProvider); ok {
+			r.providers[providedValueType] = registeredSingletonProvider(resolvedValue)
 		}
 
 		return resolvedValue

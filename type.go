@@ -8,9 +8,15 @@ import (
 // See injector_test.go file for examples
 type Provider interface{}
 
-// SingletonProvider functions similarly to Provider with the exception of being resolved only once.
+type singletonProvider struct {
+	provider Provider
+}
+
+// NewSingletonProvider instructs the Injector to resolve given provider param to resolve only once
 // All successive resolve request return the value resolved at the first time
-type SingletonProvider Provider
+func NewSingletonProvider(provider Provider) *singletonProvider {
+	return &singletonProvider{provider: provider}
+}
 
 // Handler should be function with void return type, used for registering http handlers with Injector Handle and Use methods.
 // See injector_test.go file for examples
