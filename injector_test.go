@@ -240,6 +240,27 @@ func TestInjector_Handle(t *testing.T) {
 			assert.Len(t, resolvedValues, 2)
 			assert.True(t, resolvedValues[0] == resolvedValues[1], "both values in resolvedValues should be same instance")
 		},
+		"resolve singletonProvider only once when singleton is dependency to non singleton provider": func(t *testing.T) {
+			var providerExecutedTimes int
+
+			provider := func(ctx context.Context) *test.DependencyStruct {
+				providerExecutedTimes++
+				return &test.DependencyStruct{}
+			}
+			provider2 := func(dep *test.DependencyStruct) test.DependencyInterface {
+				return dep
+			}
+
+			injector, _ := NewInjector(&testRoutes{t: t})
+			err := injector.RegisterProviders(NewSingletonProvider(provider), provider2)
+
+			for i := 0; i < 2; i++ {
+				injector.Handle(http.MethodGet, test.Endpoint, func(s test.DependencyInterface) {})
+			}
+
+			assert.Nil(t, err)
+			assert.Equal(t, 1, providerExecutedTimes)
+		},
 		"resolve new instance with non singletonProvider": func(t *testing.T) {
 			var resolvedValues []*test.DependencyStruct
 

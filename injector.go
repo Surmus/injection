@@ -122,7 +122,10 @@ func (r *Injector) registerProvider(provider Provider) bool {
 	}
 
 	providedValueType := providerType.Out(0)
+
 	r.providers[providedValueType] = func(resolvedValues resolvedValues) interface{} {
+		dependencyProviders = r.refreshedDependencyProviders(dependencyProviders)
+
 		callResults := providerValue.Call(resolveProviders(dependencyProviders, resolvedValues))
 		resolvedValue := callResults[0].Interface()
 
@@ -134,6 +137,14 @@ func (r *Injector) registerProvider(provider Provider) bool {
 	}
 
 	return true
+}
+
+func (r *Injector) refreshedDependencyProviders(dependencyProviders []*typedProvider) []*typedProvider {
+	for _, provider := range dependencyProviders {
+		provider.value = r.providers[provider.kind]
+	}
+
+	return dependencyProviders
 }
 
 // RegisterProviders registers value provider functions into DI container.
